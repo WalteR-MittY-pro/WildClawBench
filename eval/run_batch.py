@@ -62,7 +62,8 @@ OPENROUTER_BASE_URL_OPENCLAW = normalize_openrouter_base_url_for_openclaw(
 OPENROUTER_BASE_URL_CLAUDECODE = normalize_openrouter_base_url_for_claudecode(
     os.environ.get("OPENROUTER_BASE_URL", "")
 )
-MODELS_API_KEY_PLACEHOLDER = "${MY_PROXY_API_KEY}"
+MODELS_ENV_PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
+AGENT_SKILLS_DIR = "/root/skills"
 
 ALL_CATEGORIES = [
     "01_Productivity_Flow",
@@ -158,20 +159,36 @@ def collect_task_output(
 
 def load_models_config(models_config_path: Path) -> dict:
     raw_config = models_config_path.read_text(encoding="utf-8")
-    proxy_api_key = os.environ.get("MY_PROXY_API_KEY")
-    if MODELS_API_KEY_PLACEHOLDER in raw_config and not proxy_api_key:
-        raise ValueError(
-            "MY_PROXY_API_KEY must be set to a non-empty value when models config uses ${MY_PROXY_API_KEY}"
-        )
-
-    expanded_config = raw_config.replace(
-        MODELS_API_KEY_PLACEHOLDER,
-        proxy_api_key or "",
-    )
+    expanded_config = expand_models_config_env(raw_config)
     parsed_models_config = json.loads(expanded_config)
     if not isinstance(parsed_models_config, dict):
         raise ValueError(f"Models config must be a JSON object: {models_config_path}")
     return parsed_models_config
+
+
+def expand_models_config_env(raw_config: str) -> str:
+    def replacement(match: re.Match[str]) -> str:
+        env_name = match.group(1)
+        value = os.environ.get(env_name)
+        if not value:
+            raise ValueError(
+                f"{env_name} must be set to a non-empty value when models config uses ${{{env_name}}}"
+            )
+        return value
+
+    return MODELS_ENV_PLACEHOLDER_RE.sub(replacement, raw_config)
+
+
+def build_skill_read_prompt(skills: str) -> str:
+    skill_names = [line.strip() for line in skills.splitlines() if line.strip()]
+    if not skill_names:
+        return ""
+    skill_paths = "\n".join(f"- {AGENT_SKILLS_DIR}/{name}/SKILL.md" for name in skill_names)
+    return (
+        "Task-specific skills are installed in the container.\n"
+        "Before solving the task, read the relevant SKILL.md file(s) below and follow them:\n"
+        f"{skill_paths}\n\n"
+    )
 
 
 def run_single_task(
@@ -182,6 +199,7 @@ def run_single_task(
     lobster: dict | None = None,
     thinking: str | None = None,
     models_config: dict | None = None,
+    skill_dir: str | None = None,
 ) -> dict:
     """
     Execute a single task, returning a {"task_id", "scores", "error"} dict.
@@ -189,11 +207,30 @@ def run_single_task(
 
     lobster: optional dict with keys "name", "workspace", "env".
     """
+    if skill_dir is not None:
+        skill_dir_path = Path(skill_dir).expanduser().resolve()
+        if not skill_dir_path.is_dir() or not (skill_dir_path / "SKILL.md").is_file():
+            raise ValueError(f"skill_dir must point to a runtime skill containing SKILL.md: {skill_dir}")
+        task = dict(task)
+        task["skills_path"] = str(skill_dir_path.parent)
+        task["skills"] = skill_dir_path.name
+        logger.info(
+            "[%s] CoEvo skill injection: skill_name=%s, skills_path=%s",
+            task["task_id"],
+            task["skills"],
+            task["skills_path"],
+        )
+
     task_id_ori     = task["task_id"]
     workspace_path  = task["workspace_path"]
     prompt          = task["prompt"]
     timeout_seconds = task["timeout_seconds"]
-    system_prompt = f"You are an expert in a restricted, non-interactive environment. Solve the task efficiently before the timeout ({timeout_seconds}s). Run all processes in the foreground without user input or background services. Provide a complete, functional solution in a single pass with no placeholders. \n"
+    system_prompt = (
+        f"You are an expert in a restricted, non-interactive environment. Solve the task efficiently before the timeout ({timeout_seconds}s). "
+        "Run all processes in the foreground without user input or background services. "
+        "Provide a complete, functional solution in a single pass with no placeholders.\n\n"
+        f"{build_skill_read_prompt(task.get('skills', ''))}"
+    )
     prompt = system_prompt + prompt
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M")
@@ -374,6 +411,7 @@ def main() -> None:
             lobster=lobster,
             models_config=models_config,
             thinking=args.thinking,
+            skill_dir=args.skill_dir,
         )
         if result.get("error") or (result.get("scores") or {}).get("error"):
             sys.exit(1)
@@ -422,6 +460,7 @@ def main() -> None:
                         lobster=lobster,
                         models_config=models_config,
                         thinking=args.thinking,
+                        skill_dir=args.skill_dir,
                     )
                 )
         else:
@@ -436,6 +475,7 @@ def main() -> None:
                         lobster,
                         args.thinking,
                         models_config,
+                        args.skill_dir,
                     ): task["task_id"]
                     for task in tasks
                 }

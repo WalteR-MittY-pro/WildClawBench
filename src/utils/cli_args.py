@@ -58,6 +58,11 @@ def build_run_batch_parser(default_model: str, default_parallel: int) -> argpars
         help="Path to a JSON file that will replace the top-level models field in ~/.openclaw/openclaw.json before each task",
     )
     parser.add_argument(
+        "--skill-dir",
+        default=None,
+        help="Path to one runtime skill directory containing SKILL.md; overrides the task Skills section",
+    )
+    parser.add_argument(
         "--thinking",
         default=None,
         help="Thinking/reasoning level for the model (default: high)",
