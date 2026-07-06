@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 import os
 import re
+import shutil
 import subprocess
 import sys
 import json
@@ -183,12 +184,37 @@ def build_skill_read_prompt(skills: str) -> str:
     skill_names = [line.strip() for line in skills.splitlines() if line.strip()]
     if not skill_names:
         return ""
-    skill_paths = "\n".join(f"- {AGENT_SKILLS_DIR}/{name}/SKILL.md" for name in skill_names)
+    skill_paths = "\n".join(f"- {AGENT_SKILLS_DIR}/{Path(name).name}/SKILL.md" for name in skill_names)
     return (
         "Task-specific skills are installed in the container.\n"
         "Before solving the task, read the relevant SKILL.md file(s) below and follow them:\n"
         f"{skill_paths}\n\n"
     )
+
+
+def merge_skill_dir_override(skills: str, skills_path: str, skill_dir: str) -> tuple[str, str]:
+    skill_dir_path = Path(skill_dir).expanduser().resolve()
+    if not skill_dir_path.is_dir() or not (skill_dir_path / "SKILL.md").is_file():
+        raise ValueError(f"skill_dir must point to a runtime skill containing SKILL.md: {skill_dir}")
+    original_skills = _skill_names(skills)
+    merged_skills = [name for name in original_skills if Path(name).name != skill_dir_path.name]
+    merged_skills.append(skill_dir_path.name)
+    overlay_root = skill_dir_path.parent / f"{skill_dir_path.name}__merged_skills"
+    shutil.rmtree(overlay_root, ignore_errors=True)
+    overlay_root.mkdir(parents=True, exist_ok=True)
+    source_root = Path(skills_path).expanduser()
+    for name in original_skills:
+        source = source_root / name
+        if source.is_dir() and Path(name).name != skill_dir_path.name:
+            destination = overlay_root / name
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copytree(source, destination)
+    shutil.copytree(skill_dir_path, overlay_root / skill_dir_path.name)
+    return str(overlay_root), "\n".join(merged_skills)
+
+
+def _skill_names(skills: str) -> list[str]:
+    return [line.strip() for line in skills.splitlines() if line.strip()]
 
 
 def run_single_task(
@@ -208,17 +234,16 @@ def run_single_task(
     lobster: optional dict with keys "name", "workspace", "env".
     """
     if skill_dir is not None:
-        skill_dir_path = Path(skill_dir).expanduser().resolve()
-        if not skill_dir_path.is_dir() or not (skill_dir_path / "SKILL.md").is_file():
-            raise ValueError(f"skill_dir must point to a runtime skill containing SKILL.md: {skill_dir}")
         task = dict(task)
-        task["skills_path"] = str(skill_dir_path.parent)
-        task["skills"] = skill_dir_path.name
+        task["skills_path"], task["skills"] = merge_skill_dir_override(
+            task.get("skills", ""),
+            task.get("skills_path", ""),
+            skill_dir,
+        )
         logger.info(
-            "[%s] CoEvo skill injection: skill_name=%s, skills_path=%s",
+            "[%s] CoEvo skill injection merged skills: %s",
             task["task_id"],
-            task["skills"],
-            task["skills_path"],
+            task["skills"].replace("\n", ", "),
         )
 
     task_id_ori     = task["task_id"]
