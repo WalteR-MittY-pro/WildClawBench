@@ -64,7 +64,7 @@ OPENROUTER_BASE_URL_CLAUDECODE = normalize_openrouter_base_url_for_claudecode(
     os.environ.get("OPENROUTER_BASE_URL", "")
 )
 MODELS_ENV_PLACEHOLDER_RE = re.compile(r"\$\{([A-Za-z_][A-Za-z0-9_]*)\}")
-AGENT_SKILLS_DIR = "/root/skills"
+AGENT_SKILLS_PROMPT_DIR = "~/.openclaw/skills"
 
 ALL_CATEGORIES = [
     "01_Productivity_Flow",
@@ -184,7 +184,7 @@ def build_skill_read_prompt(skills: str) -> str:
     skill_names = [line.strip() for line in skills.splitlines() if line.strip()]
     if not skill_names:
         return ""
-    skill_paths = "\n".join(f"- {AGENT_SKILLS_DIR}/{Path(name).name}/SKILL.md" for name in skill_names)
+    skill_paths = "\n".join(f"- {AGENT_SKILLS_PROMPT_DIR}/{Path(name).name}/SKILL.md" for name in skill_names)
     return (
         "Task-specific skills are installed in the container.\n"
         "Before solving the task, read the relevant SKILL.md file(s) below and follow them:\n"

@@ -117,7 +117,7 @@ def setup_skills(
     task_id: str,
     skills: str,
     skills_path: str,
-    container_skills_root: str = "/root/skills",
+    container_skills_root: str = "/root/.openclaw/skills",
 ) -> None:
     container_skills_root = container_skills_root.rstrip("/")
     subprocess.run(
