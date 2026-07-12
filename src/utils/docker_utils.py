@@ -3,10 +3,11 @@ from __future__ import annotations
 import json
 import logging
 import os
+import re
 import shlex
 import subprocess
 import tempfile
-from pathlib import Path, PurePosixPath
+from pathlib import Path
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -21,8 +22,14 @@ BRAVE_API_KEY = os.environ.get("BRAVE_API_KEY", "")
 def remove_container(name: str) -> None:
     subprocess.run(["docker", "rm", "-f", name], capture_output=True)
 
-def start_container(task_id: str, workspace_path: str, extra_env: str = "",
-                    tmp_path: str = "", lobster_env: list[str] | None = None) -> None:
+def start_container(
+    task_id: str,
+    workspace_path: str,
+    extra_env: str = "",
+    tmp_path: str = "",
+    lobster_env: list[str] | None = None,
+    direct_env: dict[str, str] | None = None,
+) -> None:
     workspace = Path(workspace_path).expanduser()
     if not workspace.is_dir():
         raise RuntimeError(f"Workspace path does not exist or is not a directory: {workspace}")
@@ -37,9 +44,12 @@ def start_container(task_id: str, workspace_path: str, extra_env: str = "",
         "-e", f"BRAVE_API_KEY={BRAVE_API_KEY}",
         "-e", f"no_proxy={'' if not proxy_http else os.environ.get('NO_PROXY_INNER', '')}",
     ]
+    direct_env = direct_env or {}
     for line in extra_env.splitlines():
         key = line.strip()
         if not key or key.startswith("#"):
+            continue
+        if key in direct_env:
             continue
         value = os.environ.get(key, "")
         env_args += ["-e", f"{key}={value}"]
@@ -54,6 +64,11 @@ def start_container(task_id: str, workspace_path: str, extra_env: str = "",
         env_args += ["-e", f"{key}={value}"]
         masked = value[:4] + "***"
         logger.info("[%s] Injecting lobster env: %s=%s", task_id, key, masked)
+
+    for key, value in direct_env.items():
+        env_args += ["-e", f"{key}={value}"]
+        masked = value[:4] + "***" if "KEY" in key and value else value
+        logger.info("[%s] Injecting direct env: %s=%s", task_id, key, masked)
  
     cmd = [
         "docker", "run", "-d",
@@ -107,11 +122,21 @@ def setup_workspace(task_id: str, thinking: str | None = None) -> None:
 
     # Symlink OpenClaw workspace → TMP_WORKSPACE so the image tool's
     # media-local-roots check allows reading files under /tmp_workspace.
-    subprocess.run(
+    symlink_result = subprocess.run(
         ["docker", "exec", task_id, "/bin/bash", "-c",
          f"rm -rf /root/.openclaw/workspace && ln -s {TMP_WORKSPACE} /root/.openclaw/workspace"],
         capture_output=True, text=True,
     )
+    if symlink_result.returncode != 0:
+        raise RuntimeError(f"Workspace symlink setup failed:\n{symlink_result.stderr}")
+
+    workspace_result = subprocess.run(
+        ["docker", "exec", task_id,
+         "openclaw", "config", "set", "agents.defaults.workspace", TMP_WORKSPACE],
+        capture_output=True, text=True,
+    )
+    if workspace_result.returncode != 0:
+        raise RuntimeError(f"Failed to set OpenClaw workspace to {TMP_WORKSPACE}:\n{workspace_result.stderr}")
 
 def setup_skills(
     task_id: str,
@@ -120,49 +145,66 @@ def setup_skills(
     container_skills_root: str = "/root/.openclaw/skills",
 ) -> None:
     container_skills_root = container_skills_root.rstrip("/")
-    subprocess.run(
-        ["docker", "exec", task_id, "mkdir", "-p", container_skills_root],
-        capture_output=True,
-        text=True,
-    )
-    seen_dest_names: set[str] = set()
+    base_path = Path(skills_path)
     for line in skills.splitlines():
         line = line.strip()
         if not line:
             continue
-        src_rel = line.replace("\\", "/").strip("/")
-        dest_name = PurePosixPath(src_rel).name
-        if not dest_name:
-            logger.warning("[%s] Invalid skill path %r, skipping", task_id, line)
-            continue
-        if dest_name in seen_dest_names:
-            logger.warning(
-                "[%s] Duplicate flattened skill target %s from %s, skipping",
-                task_id,
-                dest_name,
-                line,
+        source_path = _resolve_skill_source(base_path, line)
+        if source_path is None:
+            raise RuntimeError(f"Skill source not found: {line} under {skills_path}")
+
+        target_name = source_path.stem if source_path.is_file() else source_path.name
+        target_path = f"{container_skills_root}/{target_name}"
+        mkdir_result = subprocess.run(
+            ["docker", "exec", task_id, "mkdir", "-p", container_skills_root],
+            capture_output=True, text=True,
+        )
+        if mkdir_result.returncode != 0:
+            raise RuntimeError(f"Failed to create agent skills directory:\n{mkdir_result.stderr}")
+        remove_result = subprocess.run(
+            ["docker", "exec", task_id, "rm", "-rf", target_path],
+            capture_output=True, text=True,
+        )
+        if remove_result.returncode != 0:
+            raise RuntimeError(f"Failed to clear existing skill {target_path}:\n{remove_result.stderr}")
+
+        if source_path.is_file():
+            target_result = subprocess.run(
+                ["docker", "exec", task_id, "mkdir", "-p", target_path],
+                capture_output=True,
+                text=True,
             )
-            continue
-        seen_dest_names.add(dest_name)
-        subprocess.run(
-            ["docker", "exec", task_id,
-             "mkdir", "-p", f"{container_skills_root}/{dest_name}"],
-            capture_output=True, text=True,
+            if target_result.returncode != 0:
+                raise RuntimeError(f"Failed to create skill directory {target_path}:\n{target_result.stderr}")
+        destination = (
+            f"{task_id}:{target_path}/SKILL.md"
+            if source_path.is_file()
+            else f"{task_id}:{container_skills_root}/"
         )
-        r = subprocess.run(
-            ["docker", "cp",
-             f"{skills_path}/{src_rel}/.", f"{task_id}:{container_skills_root}/{dest_name}/"],
-            capture_output=True, text=True,
-        )
+        r = subprocess.run(["docker", "cp", str(source_path), destination], capture_output=True, text=True)
         if r.returncode != 0:
-            logger.warning(
-                "[%s] Failed to copy skill %s to %s/%s: %s",
-                task_id,
-                line,
-                container_skills_root,
-                dest_name,
-                r.stderr.strip(),
-            )
+            raise RuntimeError(f"Failed to copy skill {line} from {source_path}:\n{r.stderr}")
+        check_result = subprocess.run(
+            ["docker", "exec", task_id, "test", "-f", f"{target_path}/SKILL.md"],
+            capture_output=True, text=True,
+        )
+        if check_result.returncode != 0:
+            raise RuntimeError(f"Copied skill is missing SKILL.md: {target_path}")
+
+
+def _resolve_skill_source(base_path: Path, skill_name: str) -> Path | None:
+    direct = base_path / skill_name
+    if direct.exists():
+        return direct
+    markdown = base_path / f"{skill_name}.md"
+    if markdown.is_file():
+        return markdown
+    short_match = re.fullmatch(r"(\d+)_task(\d+)", skill_name)
+    if short_match:
+        category, task_num = short_match.groups()
+        return next((path for path in sorted(base_path.glob(f"{category}_*_task_{task_num}_*")) if path.is_dir()), None)
+    return None
 
 
 def inject_openclaw_models(task_id: str, models_config: dict) -> None:
@@ -188,8 +230,13 @@ config_path = pathlib.Path('/root/.openclaw/openclaw.json')
 models_path = pathlib.Path('{container_tmp_path}')
 
 config = json.loads(config_path.read_text()) if config_path.exists() else {{}}
-models = json.loads(models_path.read_text())
-config['models'] = models
+models_config = json.loads(models_path.read_text())
+if models_config.get('mode') == 'merge':
+    config.setdefault('models', {{}}).setdefault('providers', {{}}).update(
+        models_config.get('providers', {{}})
+    )
+else:
+    config['models'] = models_config
 
 config_path.write_text(json.dumps(config, indent=2))
 PY"""

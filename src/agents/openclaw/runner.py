@@ -3,6 +3,7 @@ from __future__ import annotations
 import json
 import logging
 import os
+import shlex
 import subprocess
 import time
 from pathlib import Path
@@ -63,6 +64,7 @@ class OpenClawAgent(BaseAgent):
                 extra_env=spec.task.get("env", ""),
                 tmp_path=tmp_path,
                 lobster_env=spec.lobster.get("env") if spec.lobster else None,
+                direct_env=spec.direct_env,
             )
             if spec.lobster:
                 inject_lobster_workspace(spec.task_id, spec.lobster["workspace"])
@@ -79,13 +81,19 @@ class OpenClawAgent(BaseAgent):
             image_model = self.image_model or spec.model
             self._set_image_model(spec.task_id, image_model)
 
+            gateway_env = {
+                "OPENROUTER_API_KEY": self.openrouter_api_key,
+                "OPENROUTER_BASE_URL": self.openrouter_base_url,
+            }
+            gateway_env.update(spec.direct_env or {})
+            env_prefix = " ".join(
+                f"export {key}={shlex.quote(value)} &&"
+                for key, value in gateway_env.items()
+                if value
+            )
             gateway_proc = run_background(
                 spec.task_id,
-                bash_cmd=(
-                    f"export OPENROUTER_API_KEY='{self.openrouter_api_key}' && "
-                    f"export OPENROUTER_BASE_URL='{self.openrouter_base_url}' && "
-                    f"openclaw gateway --port {self.gateway_port}"
-                ),
+                bash_cmd=f"{env_prefix} openclaw gateway --port {self.gateway_port}",
                 log_path=spec.output_dir / "gateway.log",
             )
             logger.info("[%s] Waiting for gateway to be ready (2s)...", spec.task_id)

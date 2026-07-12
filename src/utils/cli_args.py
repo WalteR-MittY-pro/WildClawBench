@@ -3,7 +3,12 @@ from __future__ import annotations
 import argparse
 
 
-def build_run_batch_parser(default_model: str, default_parallel: int) -> argparse.ArgumentParser:
+def build_run_batch_parser(
+    default_model: str,
+    default_parallel: int,
+    default_rate_limit_retries: int = 0,
+    default_rate_limit_wait_seconds: float = 120,
+) -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
         description="ClawBench evaluation entry point",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -72,8 +77,35 @@ def build_run_batch_parser(default_model: str, default_parallel: int) -> argpars
         default=None,
         help="Optional OpenClaw image tool model. If unset, falls back to the chat --model.",
     )
+    parser.add_argument(
+        "--rate-limit-retries",
+        type=int,
+        default=default_rate_limit_retries,
+        help=f"Number of retries after a rate-limit timeout (default: {default_rate_limit_retries})",
+    )
+    parser.add_argument(
+        "--rate-limit-wait-seconds",
+        type=float,
+        default=default_rate_limit_wait_seconds,
+        help=f"Seconds to wait before a rate-limit retry (default: {default_rate_limit_wait_seconds:g})",
+    )
+    parser.add_argument(
+        "--resume-skip-existing",
+        action="store_true",
+        help="In category mode, skip tasks that already have an output run directory.",
+    )
     return parser
 
 
-def parse_run_batch_args(default_model: str, default_parallel: int) -> argparse.Namespace:
-    return build_run_batch_parser(default_model, default_parallel).parse_args()
+def parse_run_batch_args(
+    default_model: str,
+    default_parallel: int,
+    default_rate_limit_retries: int = 0,
+    default_rate_limit_wait_seconds: float = 120,
+) -> argparse.Namespace:
+    return build_run_batch_parser(
+        default_model,
+        default_parallel,
+        default_rate_limit_retries,
+        default_rate_limit_wait_seconds,
+    ).parse_args()

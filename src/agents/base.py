@@ -19,6 +19,7 @@ class AgentTaskSpec:
     thinking: str | None = None
     models_config: dict[str, Any] | None = None
     lobster: dict[str, Any] | None = None
+    direct_env: dict[str, str] | None = None
 
 
 @dataclass
