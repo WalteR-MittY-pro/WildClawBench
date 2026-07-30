@@ -649,6 +649,13 @@ def main() -> None:
         logger.info("Lobster mode: %s (workspace=%s, env_keys=%s)",
                      lobster["name"], lobster["workspace"], lobster["env"])
 
+    # Derive effective model name from models_config so output dirs reflect
+    # the actual model being run (not the default --model value from .env).
+    effective_model = args.model
+    if models_config and isinstance(models_config.get("moduleModels"), dict):
+        cfg_model = models_config["moduleModels"].get("openclaw_agent") or args.model
+        effective_model = str(cfg_model).split("/", 1)[-1] if "/" in str(cfg_model) else str(cfg_model)
+
     if args.task:
         task_file = Path(args.task)
         if not task_file.exists():
@@ -658,7 +665,7 @@ def main() -> None:
         logger.info("Single task mode: %s", task["task_id"])
         run_single_task(
             task,
-            args.model,
+            effective_model,
             backend=backend,
             output_root=output_root,
             lobster=lobster,
@@ -675,7 +682,7 @@ def main() -> None:
         categories = [args.category]
 
     all_results: list[dict] = []
-    safe_model_name = re.sub(r'[^a-zA-Z0-9.\-_]', '_', args.model)
+    safe_model_name = re.sub(r'[^a-zA-Z0-9.\-_]', '_', effective_model)
 
     for category in categories:
         category_dir = TASKS_DIR / category
@@ -721,7 +728,7 @@ def main() -> None:
                 results.append(
                     run_single_task(
                         task,
-                        args.model,
+                        effective_model,
                         backend=backend,
                         output_root=output_root,
                         lobster=lobster,
@@ -738,7 +745,7 @@ def main() -> None:
                     pool.submit(
                         run_single_task,
                         task,
-                        args.model,
+                        effective_model,
                         backend,
                         output_root,
                         lobster,

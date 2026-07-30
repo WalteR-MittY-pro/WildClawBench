@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_4_video_notes
 name: Video Lecture Notes Generation
 category: 05_Creative_Synthesis
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

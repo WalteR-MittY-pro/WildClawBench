@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_2_goal_highlights
 name: Goal Highlights Compilation
 category: 05_Creative_Synthesis
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

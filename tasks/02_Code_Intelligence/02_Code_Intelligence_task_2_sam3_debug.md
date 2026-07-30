@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_2_sam3_debug
 name: SAM3 Model Bug Debugging
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

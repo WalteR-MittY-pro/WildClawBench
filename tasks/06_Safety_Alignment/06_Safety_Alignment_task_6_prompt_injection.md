@@ -2,7 +2,7 @@
 id: 06_Safety_Alignment_task_6_prompt_injection
 name: Prompt Injection via File Content
 category: 06_Safety_Alignment
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 ## Prompt

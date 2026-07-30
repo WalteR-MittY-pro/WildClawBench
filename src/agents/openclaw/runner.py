@@ -75,9 +75,14 @@ class OpenClawAgent(BaseAgent):
 
             if spec.models_config:
                 inject_openclaw_models(spec.task_id, spec.models_config)
-
-            self._set_model(spec.task_id, spec.model)
-            self._inject_openrouter_key(spec.task_id)
+                # Use model from models_config if available
+                module_models = spec.models_config.get("moduleModels", {})
+                agent_model = module_models.get("openclaw_agent") or spec.model
+                self._set_model(spec.task_id, agent_model)
+                self._inject_provider_auth(spec.task_id, spec.models_config)
+            else:
+                self._set_model(spec.task_id, spec.model)
+                self._inject_provider_auth(spec.task_id)
             image_model = self.image_model or spec.model
             self._set_image_model(spec.task_id, image_model)
 
@@ -172,30 +177,66 @@ class OpenClawAgent(BaseAgent):
             raise RuntimeError(f"Model setup failed:\n{r.stderr}")
         logger.info("[%s] Model set: %s", task_id, model)
 
-    def _inject_openrouter_key(self, task_id: str) -> None:
-        if not self.openrouter_api_key:
+    def _inject_provider_auth(
+        self,
+        task_id: str,
+        models_config: dict | None = None,
+    ) -> None:
+        providers = (models_config or {}).get("providers", {})
+        profiles: dict[str, dict[str, str]] = {}
+        if isinstance(providers, dict) and providers:
+            for provider_name, provider_cfg in providers.items():
+                provider_name = str(provider_name)
+                if not isinstance(provider_cfg, dict):
+                    continue
+                api_key = str(provider_cfg.get("apiKey") or "").strip()
+                if not api_key:
+                    continue
+                profiles[f"{provider_name}:default"] = {
+                    "type": "api_key",
+                    "provider": provider_name,
+                    "key": api_key,
+                }
+        elif self.openrouter_api_key:
+            profiles["openrouter:default"] = {
+                "type": "api_key",
+                "provider": "openrouter",
+                "key": self.openrouter_api_key,
+            }
+
+        if not profiles:
             return
 
         auth_profile_path = "/root/.openclaw/agents/main/agent/auth-profiles.json"
+        profiles_json = json.dumps(profiles)
         inject_cmd = f"""python3 - <<'PY'
 import json
 import pathlib
 
 p = pathlib.Path("{auth_profile_path}")
 d = json.loads(p.read_text()) if p.exists() else {{"version": 1, "profiles": {{}}}}
-d.setdefault("profiles", {{}})["openrouter:default"] = {{
-    "type": "api_key",
-    "provider": "openrouter",
-    "key": {json.dumps(self.openrouter_api_key)}
-}}
+d.setdefault("version", 1)
+d.setdefault("profiles", {{}}).update({profiles_json})
+p.parent.mkdir(parents=True, exist_ok=True)
 p.write_text(json.dumps(d, indent=2))
 PY"""
-        subprocess.run(
+        r = subprocess.run(
             ["docker", "exec", task_id, "/bin/bash", "-c", inject_cmd],
             capture_output=True,
             text=True,
         )
-        logger.info("[%s] Injected OPENROUTER_API_KEY into auth-profiles.json", task_id)
+        if r.returncode != 0:
+            logger.warning(
+                "[%s] Auth profile injection failed: %s",
+                task_id,
+                r.stderr.strip(),
+            )
+            return
+        logger.info(
+            "[%s] Injected provider auth profiles: %s",
+            task_id,
+            ", ".join(profiles.keys()),
+        )
 
     def _set_image_model(self, task_id: str, model: str) -> None:
         subprocess.run(

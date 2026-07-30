@@ -2,7 +2,7 @@
 id: 03_Social_Interaction_task_1_meeting_negotiation
 name: Multi-round Meeting Time Negotiation
 category: 03_Social_Interaction
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 

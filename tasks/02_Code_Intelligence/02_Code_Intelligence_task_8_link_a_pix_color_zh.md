@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_8_link_a_pix_color_zh
 name: Link-a-Pix Color — Solve Puzzle and Recognize Filled Pattern
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

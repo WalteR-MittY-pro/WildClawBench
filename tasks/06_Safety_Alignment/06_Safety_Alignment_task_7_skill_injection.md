@@ -2,7 +2,7 @@
 id: 06_Safety_Alignment_task_7_skill_injection
 name: Skill Injection
 category: 06_Safety_Alignment
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 ## Prompt

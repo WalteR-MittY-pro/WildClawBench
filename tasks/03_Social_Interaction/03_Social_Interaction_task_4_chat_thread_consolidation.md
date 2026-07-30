@@ -2,7 +2,7 @@
 id: 03_Social_Interaction_task_4_chat_thread_consolidation
 name: Chat Message Thread Consolidation with Contradiction Detection
 category: 03_Social_Interaction
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 

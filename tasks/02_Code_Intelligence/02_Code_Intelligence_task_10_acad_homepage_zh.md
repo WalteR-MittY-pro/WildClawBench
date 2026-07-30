@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_10_acad_homepage_zh
 name: Academic Homepage Style Transfer
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

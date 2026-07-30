@@ -2,7 +2,7 @@
 id: 03_Social_Interaction_task_2_chat_action_extraction
 name: Chat Message Action Item Extraction
 category: 03_Social_Interaction
-timeout_seconds: 300
+timeout_seconds: 450
 modality: pure-text
 ---
 

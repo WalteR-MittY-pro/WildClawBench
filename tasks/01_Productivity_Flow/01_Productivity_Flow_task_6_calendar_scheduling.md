@@ -2,7 +2,7 @@
 id: 01_Productivity_Flow_task_6_calendar_scheduling
 name: Calendar Conflict Detection and Smart Scheduling
 category: 01_Productivity_Flow
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

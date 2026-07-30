@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_2_conflicting_handling
 name: Conflicting Information Handling between Local Data and Web
 category: 04_Search_Retrieval
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

@@ -2,7 +2,7 @@
 id: 01_Productivity_Flow_task_5_wikipedia_biography
 name: Extract Biography Sections from Wikipedia
 category: 01_Productivity_Flow
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_7_location_search
 name: Search for Location Information Based on an Image
 category: 04_Search_Retrieval
-timeout_seconds: 600
+timeout_seconds: 900
 modality: multimodal
 ---
 

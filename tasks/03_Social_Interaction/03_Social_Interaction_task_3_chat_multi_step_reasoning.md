@@ -2,7 +2,7 @@
 id: 03_Social_Interaction_task_3_chat_multi_step_reasoning
 name: Multi-step Chat Reasoning
 category: 03_Social_Interaction
-timeout_seconds: 360
+timeout_seconds: 540
 modality: pure-text
 ---
 

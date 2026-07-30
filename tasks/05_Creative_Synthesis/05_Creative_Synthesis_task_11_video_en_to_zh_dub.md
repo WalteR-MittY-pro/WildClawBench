@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_11_video_en_to_zh_dub
 name: Video English Speech Extraction, Translation & Chinese Dubbing
 category: 05_Creative_Synthesis
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

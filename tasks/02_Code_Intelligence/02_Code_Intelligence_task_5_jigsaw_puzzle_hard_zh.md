@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_5_jigsaw_puzzle_hard_zh
 name: Hard Jigsaw Puzzle — 5×5 Pieces, Filter, Rectify, and Reassemble
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

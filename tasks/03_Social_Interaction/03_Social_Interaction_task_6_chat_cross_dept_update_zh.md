@@ -2,7 +2,7 @@
 id: 03_Social_Interaction_task_6_chat_cross_dept_update_zh
 name: 跨部门项目状态汇总（中文版）
 category: 03_Social_Interaction
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 

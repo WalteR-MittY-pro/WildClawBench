@@ -2,7 +2,7 @@
 id: 01_Productivity_Flow_task_3_bibtex
 name: Recover Official arXiv Titles and BibTeX from Local PDFs
 category: 01_Productivity_Flow
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

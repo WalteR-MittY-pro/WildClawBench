@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_8_repo_to_homepage
 name: GitHub Repository to Project Homepage
 category: 05_Creative_Synthesis
-timeout_seconds: 600
+timeout_seconds: 900
 modality: multimodal
 ---
 

@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_3_jigsaw_puzzle_zh
 name: Jigsaw Puzzle Restoration — Filter, Rectify, and Reassemble Pieces
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

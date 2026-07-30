@@ -40,3 +40,7 @@ cookies.txt
 output.rar
 output_qwen.rar
 *.rar
+
+# 敏感配置(含 api key,勿提交)
+.env2
+models_config_*.json

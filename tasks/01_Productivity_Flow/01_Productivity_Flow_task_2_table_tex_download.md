@@ -2,7 +2,7 @@
 id: 01_Productivity_Flow_task_2_table_tex_download
 name: Recover Original Table TeX from arXiv Source
 category: 01_Productivity_Flow
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

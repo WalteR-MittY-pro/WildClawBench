@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_1_sam3_inference
 name: SAM3 Inference Code Implementation
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

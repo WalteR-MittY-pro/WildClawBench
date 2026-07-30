@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_5_fuzzy_search
 name: Fuzzy Intent Search
 category: 04_Search_Retrieval
-timeout_seconds: 900
+timeout_seconds: 1350
 modality: pure-text
 ---
 

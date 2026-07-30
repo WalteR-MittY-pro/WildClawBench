@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_6_excel_with_search
 name: Integrated Search of Local and Online Information
 category: 04_Search_Retrieval
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 

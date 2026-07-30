@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_10_social_poster_multi_crop
 name: Social Media Poster Smart Crop for Multi-Platform
 category: 05_Creative_Synthesis
-timeout_seconds: 300
+timeout_seconds: 450
 modality: multimodal
 ---
 

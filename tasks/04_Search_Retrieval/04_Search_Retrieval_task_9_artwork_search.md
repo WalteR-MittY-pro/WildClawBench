@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_9_artwork_search
 name: Confirm the location of an artwork.
 category: 04_Search_Retrieval
-timeout_seconds: 600
+timeout_seconds: 900
 modality: multimodal
 ---
 

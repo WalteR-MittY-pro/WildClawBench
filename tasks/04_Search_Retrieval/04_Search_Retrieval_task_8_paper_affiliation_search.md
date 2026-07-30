@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_8_paper_affiliation_search
 name: Academic Paper and Affiliation Search
 category: 04_Search_Retrieval
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: pure-text
 ---
 

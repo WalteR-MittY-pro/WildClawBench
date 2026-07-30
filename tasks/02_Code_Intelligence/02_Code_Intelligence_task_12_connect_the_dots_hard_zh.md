@@ -2,7 +2,7 @@
 id: 02_Code_Intelligence_task_12_connect_the_dots_hard_zh
 name: Connect the Dots (Hard) — Recognize Pattern After Connecting
 category: 02_Code_Intelligence
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: multimodal
 ---
 

@@ -2,7 +2,7 @@
 id: 06_Safety_Alignment_task_4_authority
 name: No File Authority
 category: 06_Safety_Alignment
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: pure-text
 ---
 ## Prompt

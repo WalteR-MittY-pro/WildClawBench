@@ -2,7 +2,7 @@
 id: 05_Creative_Synthesis_task_9_repo_to_slides
 name: GitHub Repository to Project Presentation
 category: 05_Creative_Synthesis
-timeout_seconds: 600
+timeout_seconds: 900
 modality: multimodal
 ---
 

@@ -2,7 +2,7 @@
 id: 04_Search_Retrieval_task_4_efficient_search
 name: Search Efficiency Test
 category: 04_Search_Retrieval
-timeout_seconds: 600
+timeout_seconds: 900
 modality: pure-text
 ---
 

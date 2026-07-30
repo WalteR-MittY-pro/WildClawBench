@@ -2,7 +2,7 @@
 id: 01_Productivity_Flow_task_9_scp_crawl
 name: Crawl SCP-001 to SCP-050 with Text, Images, and Metadata
 category: 01_Productivity_Flow
-timeout_seconds: 1200
+timeout_seconds: 1800
 modality: pure-text
 ---
 
